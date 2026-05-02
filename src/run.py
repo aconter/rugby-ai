@@ -171,6 +171,7 @@ def main() -> int:
             model_path=args.model,
             output_path=output_video,
             conf=args.conf,
+            classes=args.classes,
         )
 
     elapsed = time.time() - start

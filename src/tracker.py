@@ -30,6 +30,7 @@ def track_video(
     output_path: str | Path | None = None,
     conf: float = 0.4,
     tracker: str = "bytetrack.yaml",
+    classes: list[int] | None = None,
 ) -> list[dict]:
     """
     Suit les joueurs dans une vidéo avec ByteTrack.
@@ -45,6 +46,9 @@ def track_video(
 
     print(f"\n  Vidéo : {total_frames} frames · {fps:.1f} fps · durée {duration_str}")
     print(f"  Modèle chargé : {Path(str(model_path)).name}\n")
+
+    if classes is None:
+        classes = [0]
 
     results_all = []
     t_start = time.time()
@@ -64,7 +68,7 @@ def track_video(
         model.track(
             source=str(video_path),
             conf=conf,
-            classes=[0],
+            classes=classes,
             tracker=tracker,
             save=bool(output_path),
             project=str(Path(output_path).parent) if output_path else None,
