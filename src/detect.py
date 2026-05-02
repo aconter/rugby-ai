@@ -7,6 +7,7 @@ import logging
 from pathlib import Path
 
 import cv2
+from tqdm import tqdm
 from ultralytics import YOLO
 
 logger = logging.getLogger(__name__)
@@ -33,7 +34,7 @@ def detect_video(
         Liste de dicts {frame, detections} par frame.
     """
     if classes is None:
-        classes = [0]  # 0 = person dans COCO
+        classes = [0]
 
     model = YOLO(str(model_path))
     cap = cv2.VideoCapture(str(video_path))
@@ -41,17 +42,35 @@ def detect_video(
     if not cap.isOpened():
         raise FileNotFoundError(f"Impossible d'ouvrir la vidéo : {video_path}")
 
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    duration_s = total_frames / fps if fps > 0 else 0
+    duration_str = f"{int(duration_s // 60)}m{int(duration_s % 60):02d}s"
+
+    print(f"\n  Vidéo : {total_frames} frames · {fps:.1f} fps · {w}x{h} · durée {duration_str}")
+    print(f"  Modèle chargé : {Path(str(model_path)).name}\n")
+
     writer = None
     if output_path:
-        fps = cap.get(cv2.CAP_PROP_FPS)
-        w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         fourcc = cv2.VideoWriter_fourcc(*"mp4v")
         writer = cv2.VideoWriter(str(output_path), fourcc, fps, (w, h))
 
     results_all = []
-    frame_idx = 0
 
+    progress = tqdm(
+        total=total_frames,
+        unit="frame",
+        ncols=80,
+        bar_format=(
+            "  {l_bar}{bar}| {n_fmt}/{total_fmt} "
+            "[{elapsed}<{remaining} · {rate_fmt}]"
+        ),
+        colour="green",
+    )
+
+    frame_idx = 0
     while True:
         ret, frame = cap.read()
         if not ret:
@@ -71,6 +90,8 @@ def detect_video(
                 )
 
         results_all.append({"frame": frame_idx, "detections": detections})
+        progress.set_postfix({"détections": len(detections)}, refresh=False)
+        progress.update(1)
 
         if writer:
             annotated = results[0].plot()
@@ -78,6 +99,7 @@ def detect_video(
 
         frame_idx += 1
 
+    progress.close()
     cap.release()
     if writer:
         writer.release()
