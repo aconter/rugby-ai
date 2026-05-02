@@ -18,6 +18,10 @@ import sys
 import time
 from pathlib import Path
 
+# Ajouter le dossier src/ au path Python pour trouver detect.py et tracker.py
+# (nécessaire quand src/ est monté en volume et non intégré dans l'image)
+sys.path.insert(0, str(Path(__file__).parent))
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s  %(levelname)-8s  %(message)s",
