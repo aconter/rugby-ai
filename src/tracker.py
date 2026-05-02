@@ -87,6 +87,19 @@ def track_video(
         progress.set_postfix({"joueurs": len(tracks)}, refresh=False)
         progress.update(1)
 
+        # Log toutes les 500 frames pour GitHub Actions
+        if frame_idx > 0 and frame_idx % 500 == 0:
+            elapsed = time.time() - t_start
+            pct = frame_idx / total_frames * 100 if total_frames else 0
+            eta_s = (elapsed / frame_idx) * (total_frames - frame_idx)
+            eta_str = f"{int(eta_s // 60)}m{int(eta_s % 60):02d}s"
+            fps_proc = frame_idx / elapsed if elapsed > 0 else 0
+            print(
+                f"  [{pct:5.1f}%] frame {frame_idx}/{total_frames}"
+                f" · {fps_proc:.1f} fps · ETA {eta_str}",
+                flush=True,
+            )
+
     progress.close()
     elapsed = time.time() - t_start
     logger.info("Tracking terminé : %d frames en %.1fs", len(results_all), elapsed)
